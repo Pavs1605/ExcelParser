@@ -6,5 +6,5 @@ import org.springframework.stereotype.Service;
 @Service
 public interface SpreadsheetService {
 
-    public Spreadsheet getDataFromSpreadsheet();
+    public Spreadsheet extractValuesFromSpreadsheet();
 }
