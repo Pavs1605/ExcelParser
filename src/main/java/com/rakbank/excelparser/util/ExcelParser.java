@@ -28,7 +28,7 @@ public class ExcelParser {
     public static void main(String[] args) {
         ExcelParser excelParser = new ExcelParser();
         String filePath = "src/main/resources/static/SMSData.xlsx";
-        String outputFilePath = "src/main/resources/static/OutputTemplate.xlsx";
+       // String outputFilePath = "src/main/resources/static/OutputTemplate.xlsx";
         excelParser.extractFromSpreadSheet(filePath);
     }
 
@@ -79,9 +79,10 @@ public class ExcelParser {
             WBSheet sheetObj = new WBSheet();
             sheetObj.setId(i + 1);
             Sheet sheet = workbook.getSheetAt(i);
-            if (sheet != null)
+            if (sheet != null) {
                 log.debug("getDataFromAllSheets(): Starting with sheet at index : {} sheetName :{}", i, (sheet != null ? sheet.getSheetName() : ""));
-
+                return null;
+            }
             //gets data from individual sheet
             sheetObj = getData(sheet);
             sheetList.add(sheetObj);
@@ -256,7 +257,7 @@ public class ExcelParser {
                             content.setJourney(cell.getStringCellValue());
                         }
                         break;
-                    case "Event":
+                    case "event":
                         if (type.equals(CellType.STRING)) {
                             content.setEvent(cell.getStringCellValue());
                         }
