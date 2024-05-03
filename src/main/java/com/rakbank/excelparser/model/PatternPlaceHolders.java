@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PatternPlaceHolders {
+    int sno;
     String pattern;
-    String event_rq_template;
-    String event_id;
+    String eventRqTemplate;
+    String eventId;
 }
