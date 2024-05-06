@@ -4,11 +4,11 @@
 2. Different Patterns in files which do not have same start and end values
   * $$Prospect_ID# 
   * OTP##$$ Enter OTP ( This should be excluded if #1 is in place)
-    * Some special characters like circle are added
+    * Some special characters like circle are added - https://github.com/Pavs1605/ExcelParser/blob/main/img_1.png
   * <@PaidAmount> - Has start and end values but has an @ as well
   *  #shortcode - No ending character
 
-  * "$$Enter OTP $$OTP$$" => This string is a part of OTP##$$Enter OTP $$OTP$$, here $$ is available for enter OTP, and enter OTP can be considered as a token
+  * \$\$Enter OTP \$\$OTP\$\$ => This string is a part of OTP##$$Enter OTP $$OTP$$, here $$ is available for enter OTP, and enter OTP can be considered as a token
   * OTP##$$Your One Time Password for adding $$BNF_NAME$$( Here the token can be considered as Your One Time Password for adding )
 3. Url's
    * It's better to not include '/' as dynamic values character
