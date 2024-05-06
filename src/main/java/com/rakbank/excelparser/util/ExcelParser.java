@@ -1,9 +1,6 @@
 package com.rakbank.excelparser.util;
 
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,6 +24,18 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ExcelParser {
     ExecutorService executorService = Executors.newFixedThreadPool(10);
+    public final String SNO = "Sno";
+    public final String PRODUCT = "Product";
+    public final String JOURNEY = "Journey";
+    public final String EVENT = "Event";
+    public final String SMS_TEMPLATE = "SMS Template";
+    public final String PATTERN = "Pattern";
+    public final String EVENT_RQ_TEMPLATE = "Event_RQ_Template";
+    public final String EVENT_ID = "Event_ID";
+    public final String ORIGINAL_STR = "Original_Str";
+
+
+
     public static void main(String[] args) {
         ExcelParser excelParser = new ExcelParser();
         String filePath = "src/main/resources/static/SMSData.xlsx";
@@ -59,7 +68,7 @@ public class ExcelParser {
             FileInputStream  file = new FileInputStream(filePath);
             Workbook workbook = new XSSFWorkbook(file);
 
-            //System.out.println("Inside extract from spreadsheet, reading from excel sheet");
+            //System.out.println("Inside extract from spreadsheet, reading from Excel sheet");
             if (fileObj == null || file == null) {
                 log.error("extractValuesFromSpreadsheet() : Unable to find file : {}", filePath);
                 //System.out.println("Unable to find file for extracting exiting");
@@ -121,7 +130,7 @@ public class ExcelParser {
                     return null;
                 }
                 // gets data from individual sheet
-                return getDataFromSheet(sheet);
+                return getDataFromSingleSheet(sheet);
             }, executorService);
 
             futures.add(future);
@@ -146,7 +155,7 @@ public class ExcelParser {
 
     }
 
-    public void createOutputInNewSpreadSheet(List<WBSheet> sheetsData, String filePath) {
+    private void createOutputInNewSpreadSheet(List<WBSheet> sheetsData, String filePath) {
         log.debug("createOutputSpreadSheet(): Updating spreadsheet with extracted values");
 
 
@@ -184,29 +193,29 @@ public class ExcelParser {
 
 
                 Cell headerCell = header.createCell(0);
-                headerCell.setCellValue("Sno");
+                headerCell.setCellValue(SNO);
                 headerCell.setCellStyle(headerStyle);
 
                 headerCell = header.createCell(1);
-                headerCell.setCellValue("Pattern");
+                headerCell.setCellValue(PATTERN);
                 headerCell.setCellStyle(headerStyle);
 
                 headerCell = header.createCell(2);
-                headerCell.setCellValue("Event_RQ_Template");
+                headerCell.setCellValue(EVENT_RQ_TEMPLATE);
                 headerCell.setCellStyle(headerStyle);
 
                 headerCell = header.createCell(3);
-                headerCell.setCellValue("Event_id");
+                headerCell.setCellValue(EVENT_ID);
                 headerCell.setCellStyle(headerStyle);
 
                 headerCell = header.createCell(4);
-                headerCell.setCellValue("Original SMS template");
+                headerCell.setCellValue(ORIGINAL_STR);
                 headerCell.setCellStyle(headerStyle);
 
 
                 //update with placeholder patterns
                 log.debug("createOutputSpreadSheet(): Extracting placeholders and create rows with contents ");
-                createRowsWithPlaceholders(singleSheet.getContentList(), sheet);
+                createRowsInSheetWithDynamicValues(singleSheet.getContentList(), sheet);
             }
             log.debug("createOutputSpreadSheet(): writing to workbook");
             workbook.write(outputStream);
@@ -230,7 +239,7 @@ public class ExcelParser {
 
     }
 
-    private void createRowsWithPlaceholders(List<Content> contentList, Sheet sheet) {
+    private void createRowsInSheetWithDynamicValues(List<Content> contentList, Sheet sheet) {
         //this is needed to wrap text
         log.debug("createRowsWithPlaceholders(): Starting with createRows");
 
@@ -271,7 +280,7 @@ public class ExcelParser {
         log.debug("createRowsWithPlaceholders(): finished updating excel");
     }
 
-    public WBSheet getDataFromSheet(Sheet sheet) {
+    private WBSheet getDataFromSingleSheet(Sheet sheet) {
         log.debug("getData : extracting data from sheet");
         //System.out.println("Extracting data from sheet");
         WBSheet wbSheet = new WBSheet();
@@ -307,27 +316,27 @@ public class ExcelParser {
                 CellType type = cell.getCellType();
                 log.debug("getData : Getting data from rows and setting in content object");
                 switch (columnName) {
-                    case "Sno":
+                    case SNO:
                         if (type.equals(CellType.NUMERIC)) {
                             content.setSno((int) cell.getNumericCellValue());
                         }
                         break;
-                    case "Product":
+                    case PRODUCT:
                         if (type.equals(CellType.STRING)) {
                             content.setProduct(cell.getStringCellValue());
                         }
                         break;
-                    case "Journey":
+                    case JOURNEY:
                         if (type.equals(CellType.STRING)) {
                             content.setJourney(cell.getStringCellValue());
                         }
                         break;
-                    case "event":
+                    case EVENT:
                         if (type.equals(CellType.STRING)) {
                             content.setEvent(cell.getStringCellValue());
                         }
                         break;
-                    case "SMS Template":
+                    case SMS_TEMPLATE:
                         if (type.equals(CellType.STRING)) {
                             content.setSmsTemplate(cell.getStringCellValue());
                         }
@@ -354,7 +363,7 @@ public class ExcelParser {
     }
 
 
-    public PatternPlaceHolders extractDynamicValuesFromSmsTemplate(Content content) {
+    private PatternPlaceHolders extractDynamicValuesFromSmsTemplate(Content content) {
         log.debug("extractValues : extracting values from rows");
         //System.out.println("extractDynamicValuesFromSmsTemplate" );
 
@@ -428,7 +437,7 @@ public class ExcelParser {
         return placeHolder;
     }
 
-    public void shutdownExecutorService() {
+    private void shutdownExecutorService() {
         executorService.shutdown();
         try {
 
@@ -469,8 +478,6 @@ public class ExcelParser {
     @AllArgsConstructor
     @NoArgsConstructor
     public class Spreadsheet {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
         long id;
         String spreadSheetName;
         String defaultSheetName;
