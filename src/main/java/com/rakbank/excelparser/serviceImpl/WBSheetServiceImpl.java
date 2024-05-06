@@ -114,7 +114,7 @@ public class WBSheetServiceImpl implements WBSheetService {
          [a-zA-Z_ ]+ ->  can have 1 or more occurrence of leters, underscore
          */
         String regexWordsNum = "[a-zA-Z0-9-,. ]";
-            String regex = "(?!\\(s\\))[^a-zA-Z0-9_,.& ]+[a-zA-Z_ ]+[^a-zA-Z0-9_,.& ]+";
+            String regex = "(?!\\(s\\))[^a-zA-Z0-9_,.& ]+[a-zA-Z0-9_ ]+[^a-zA-Z0-9_,.& ]+";
         StringBuilder eventStr = new StringBuilder();
         int i = 0;
 

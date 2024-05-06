@@ -145,6 +145,17 @@ public class WBSheetServiceTest {
     }
 
     @Test
+    public void testAngularBraces() {
+        WBSheetServiceImpl service = new WBSheetServiceImpl();
+        Content content = new Content();
+        content.setSmsTemplate("Dear Customer, your digital account number for RAKBANK Card number ending <CardNumberLast4> has been permanently deactivated.");
+
+        PatternPlaceHolders result = service.extractValues(content);
+
+        Assertions.assertEquals("Dear Customer, your digital account number for RAKBANK Card number ending (.*) has been permanently deactivated.", result.getPattern());
+        Assertions.assertEquals("CardNumberLast4:param0;", result.getEventRqTemplate());
+    }
+    @Test
     public void testExtractValuesAtTheRateOf() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();

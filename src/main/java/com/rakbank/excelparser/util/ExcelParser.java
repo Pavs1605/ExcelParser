@@ -14,44 +14,55 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
 public class ExcelParser {
     ExecutorService executorService = Executors.newFixedThreadPool(10);
-    public final String SNO = "Sno";
-    public final String PRODUCT = "Product";
-    public final String JOURNEY = "Journey";
-    public final String EVENT = "Event";
-    public final String SMS_TEMPLATE = "SMS Template";
-    public final String PATTERN = "Pattern";
-    public final String EVENT_RQ_TEMPLATE = "Event_RQ_Template";
-    public final String EVENT_ID = "Event_ID";
-    public final String ORIGINAL_STR = "Original_Str";
+    public static final String XLSX = ".xlsx";
+    public static final String SNO = "Sno";
+    public static final String PRODUCT = "Product";
+    public static final String JOURNEY = "Journey";
+    public static final String EVENT = "Event";
+    public static final String SMS_TEMPLATE = "SMS Template";
+    public static final String PATTERN = "Pattern";
+    public static final String EVENT_RQ_TEMPLATE = "Event_RQ_Template";
+    public static final String EVENT_ID = "Event_ID";
+    public static final String ORIGINAL_STR = "Original String";
 
+    public static final String OUTPUT_FILE_NAME = "tempFile";
 
+    public static final int HEADER_ROW_NUM = 1;
+    public static final int SMS_TEMPLATE_COL_NO = 5; //defaulting 5th column for sms template col
+
+    public static final int MIN_COLS_CHECK = 6;
+
+    public static final String[] exclusionStrings = {"TVN##$$", "OTP##", "TCN##$$", "day(s)", "Debit/Credit"};
+
+    private static String regex;
+
+    static {
+        initializeRegex();
+    }
 
     public static void main(String[] args) {
         ExcelParser excelParser = new ExcelParser();
-        String filePath = "src/main/resources/static/SMSData.xlsx";
+        String filePath = "src/main/resources/static/SMSData1.xlsx";
 
        // String outputFilePath = "src/main/resources/static/OutputTemplate.xlsx";
         long startTime = System.currentTimeMillis();
-        //System.out.println("Start time : " + startTime);
+        System.out.println("Start time : " + startTime);
 
         //core logic
         excelParser.extractFromSpreadSheet(filePath);
         excelParser.shutdownExecutorService(); // Shutdown the ExecutorService
-        //System.out.println("Finished writing in spreadsheet");
+        System.out.println("Finished writing in spreadsheet");
 
         //calculating time
         long endTime = System.currentTimeMillis();
-        //System.out.println("end time : " + endTime);
+        System.out.println("end time : " + endTime);
 
         long totalTime = endTime-startTime;
         System.out.println("Total Time taken in seconds::" + (double)(totalTime)/ (double)(1000) + ", In minutes ::" +  (double)(totalTime)/ (double)(1000*60));
@@ -68,17 +79,17 @@ public class ExcelParser {
             FileInputStream  file = new FileInputStream(filePath);
             Workbook workbook = new XSSFWorkbook(file);
 
-            //System.out.println("Inside extract from spreadsheet, reading from Excel sheet");
+            System.out.println("Inside extract from spreadsheet, reading from Excel sheet");
             if (fileObj == null || file == null) {
                 log.error("extractValuesFromSpreadsheet() : Unable to find file : {}", filePath);
-                //System.out.println("Unable to find file for extracting exiting");
+                System.out.println("Unable to find file for extracting exiting");
                 return;
             }
             //custom object
             spreadsheet.setSpreadSheetName(fileObj.getName());
             spreadsheet.setDefaultSheetName(workbook.getSheetAt(workbook.getActiveSheetIndex()).getSheetName());
             spreadsheet.setNoOfSheets(workbook.getNumberOfSheets());
-            //System.out.println("Spreadsheet object :: " + spreadsheet);
+            System.out.println("Spreadsheet object :: " + spreadsheet);
 
 
             //setting data into the pojo's
@@ -86,18 +97,18 @@ public class ExcelParser {
             List<WBSheet> sheetsData = getDataFromAllSheets(workbook);
             if(sheetsData == null){
                 log.error("Sheets data is null");
-                //System.out.println("Parser failed, unable to get data from sheets");
+                System.out.println("Parser failed, unable to get data from sheets");
                 return;
             }
-            //System.out.println("Spreadsheet object is set ");
+            System.out.println("Spreadsheet object is set ");
             spreadsheet.setSheets(sheetsData);
 
             //setting the data in output worksheet
             log.debug("extractValuesFromSpreadsheet(): Updating sheet with placeholders");
-            //System.out.println("Creating new spreadsheet");
-            createOutputInNewSpreadSheet(sheetsData, filePath);
+            System.out.println("Creating new spreadsheet");
+            createOutputHeaderRowInNewSpreadSheet(sheetsData, filePath);
 
-            //System.out.println("Exiting writing in spreadsheet");
+            System.out.println("Exiting writing in spreadsheet");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -106,11 +117,12 @@ public class ExcelParser {
 
     }
 
-    private List<WBSheet> getDataFromAllSheets(Workbook workbook) {
+    private List<WBSheet> getDataFromAllSheets(Workbook workbook)  {
 
         log.debug("getDataFromAllSheets(): Start getDataFromAllSheets");
-        //System.out.println("Getting data from all sheets");
+        System.out.println("Getting data from all sheets");
         List<WBSheet> sheetList = new ArrayList<>();
+        try {
         if (workbook == null)
             return null;
 
@@ -125,7 +137,7 @@ public class ExcelParser {
                 sheetObj.setId(finalI + 1);
                 Sheet sheet = workbook.getSheetAt(finalI);
                 if (sheet == null) {
-                    //System.out.println("sheet is null at index ::" + finalI + "exiting code");
+                    System.out.println("sheet is null at index ::" + finalI + "exiting code");
                     log.debug("getDataFromAllSheets(): Starting with sheet at index : {} sheetName :{}", finalI, "");
                     return null;
                 }
@@ -138,24 +150,28 @@ public class ExcelParser {
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
-        try {
+
             allFutures.get(); // Wait for all tasks to complete
-        } catch (Exception e) {
+
+
+            System.out.println("Streaming all futures");
+            futures.stream()
+                    .map(CompletableFuture::join) // Get the result of each CompletableFuture
+                    .filter(Objects::nonNull) // Filter out any null results
+                    .forEach(sheetList::add); // Add valid results to sheetList
+
+            System.out.println("sheet list size" + sheetList.size());
+
+        }
+        catch (Exception e) {
             log.error("Error waiting for all tasks to complete: {}", e.getMessage());
         }
-
-        //System.out.println("Streaming all futures");
-        futures.stream()
-                .map(CompletableFuture::join) // Get the result of each CompletableFuture
-                .filter(Objects::nonNull) // Filter out any null results
-                .forEach(sheetList::add); // Add valid results to sheetList
-
-        //System.out.println("sheet list size" + sheetList.size());
         return sheetList;
+
 
     }
 
-    private void createOutputInNewSpreadSheet(List<WBSheet> sheetsData, String filePath) {
+    private void createOutputHeaderRowInNewSpreadSheet(List<WBSheet> sheetsData, String filePath) {
         log.debug("createOutputSpreadSheet(): Updating spreadsheet with extracted values");
 
 
@@ -163,7 +179,7 @@ public class ExcelParser {
 
         try {
             String directoryPath = new File(filePath).getParent();
-            String tempFileName = "tempFile" + System.currentTimeMillis() + ".xlsx";
+            String tempFileName = OUTPUT_FILE_NAME + System.currentTimeMillis() + XLSX;
             // Create a File object for the temporary file
             File tempFile = new File(directoryPath, tempFileName);
             log.debug("createOutputSpreadSheet(): Number of sheets to create: " + sheetsData.size());
@@ -216,6 +232,8 @@ public class ExcelParser {
                 //update with placeholder patterns
                 log.debug("createOutputSpreadSheet(): Extracting placeholders and create rows with contents ");
                 createRowsInSheetWithDynamicValues(singleSheet.getContentList(), sheet);
+
+                //TODO: if sheet is empty, don't write to output stream
             }
             log.debug("createOutputSpreadSheet(): writing to workbook");
             workbook.write(outputStream);
@@ -248,6 +266,11 @@ public class ExcelParser {
         style.setWrapText(true);
 
         int rowNum = 1; //since 1st row is header row
+        if(contentList == null || contentList.isEmpty())
+        {
+            System.out.println("Unable to create as content list is empty");
+            return;
+        }
         for (Content content : contentList) {
             log.debug("createRowsWithPlaceholders(): creating rows & cell values");
             PatternPlaceHolders placeHolders = content.getPatternPlaceHolders();
@@ -282,7 +305,11 @@ public class ExcelParser {
 
     private WBSheet getDataFromSingleSheet(Sheet sheet) {
         log.debug("getData : extracting data from sheet");
-        //System.out.println("Extracting data from sheet");
+        System.out.println("Extracting data from sheet");
+        if(sheet == null)
+            return null;
+
+        int smsTemplateColumnNo = SMS_TEMPLATE_COL_NO; //defaulting as 5;
         WBSheet wbSheet = new WBSheet();
         int rowCount = sheet.getLastRowNum() + 1;
         wbSheet.setName(sheet.getSheetName());
@@ -290,22 +317,48 @@ public class ExcelParser {
         wbSheet.setRowCount(rowCount);
 
         // Assuming the first row contains column names
-        Row headerRow = sheet.getRow(0);
-        //System.out.println("Setting header row");
+        Row headerRow = sheet.getRow(HEADER_ROW_NUM);
+        System.out.println("Setting header row");
         log.debug("getData : extracting columns form sheet");
         List<Content> contentList = new ArrayList<>();
         Map<Integer, String> columnIndexMap = new HashMap<>();
+        //checking if SMSTemplate column is found
+
+        boolean smsTemplateColumnExists = false;
+
+
         for (Cell cell : headerRow) {
             String columnName = cell.getStringCellValue();
             int columnIndex = cell.getColumnIndex();
             columnIndexMap.put(columnIndex, columnName);
+
+
+            if(columnName.equalsIgnoreCase(SMS_TEMPLATE)){
+                smsTemplateColumnExists = true;
+                smsTemplateColumnNo = columnIndex;
+                System.out.println("Sms template col found on :: " + smsTemplateColumnNo);
+            }
+
+        }
+
+        if(!smsTemplateColumnExists){
+            System.out.println("Sms template col does not exist");
+            return null;
         }
 
         //assuming first is header row
         log.debug("getData : iterating through rows to get content");
-        for (int i = 1; i < rowCount; i++) {
+        for (int i = HEADER_ROW_NUM+1; i < rowCount; i++) {
 
             Row row = sheet.getRow(i);
+
+            boolean validationPassed = validateRow(row, smsTemplateColumnNo);
+
+            if(!validationPassed)
+            {
+                System.out.println("Validation failed, not a valid row, checking next row");
+                continue;
+            }
 
             Content content = new Content();
             content.setId(i);
@@ -347,29 +400,70 @@ public class ExcelParser {
                 }
             }
 
-            //System.out.println("header row content ::" + content );
-            log.debug("getData : Extracting placeholders from each row");
-            PatternPlaceHolders placeHolders = extractDynamicValuesFromSmsTemplate(content);
-            content.setPatternPlaceHolders(placeHolders);
-            contentList.add(content);
+            if (content.getSmsTemplate() == null || content.getSmsTemplate().isEmpty()) {
+                System.out.println("No sms template column");
+            } else {
 
-            log.debug("getData : Setting placeholders in content object");
+                System.out.println("header row content ::" + content );
+                log.debug("getData : Extracting placeholders from each row");
+                PatternPlaceHolders placeHolders = extractDynamicValuesFromSmsTemplate(content);
+                content.setPatternPlaceHolders(placeHolders);
+                contentList.add(content);
 
+                log.debug("getData : Setting placeholders in content object");
+
+            }
+
+            wbSheet.setContentList(contentList);
         }
 
-        wbSheet.setContentList(contentList);
-
         return wbSheet;
+    }
+
+    private boolean validateRow(Row row, int smsTemplateColNo){
+        if(row == null)
+        {
+            System.out.println("row is empty, validation failed");
+            return false;
+        }
+
+        int colsCheck = 0 ;
+
+        for (Cell cell : row) {
+            CellType type = cell.getCellType();
+
+            if (type.equals(CellType.NUMERIC)) {
+              colsCheck ++;
+            } else if (type.equals(CellType.STRING)) {
+                String val = cell.getStringCellValue();
+                if(val != null && !val.isEmpty()) {
+                    colsCheck++;
+                }
+            }
+
+        }
+        //checking if sms template value is not null
+        Cell cellAtSmsTemp = row.getCell(smsTemplateColNo);
+        if(cellAtSmsTemp == null || cellAtSmsTemp.getStringCellValue() == null ||  cellAtSmsTemp.getStringCellValue().isEmpty()){
+            System.out.println("Sms template does not have content, not a valid row");
+            return false;
+        }
+
+        System.out.println("No of cols with content :: "+ colsCheck);
+        //checking if there are atleast 6 cols which have value
+        return colsCheck >= MIN_COLS_CHECK;
+
     }
 
 
     private PatternPlaceHolders extractDynamicValuesFromSmsTemplate(Content content) {
         log.debug("extractValues : extracting values from rows");
-        //System.out.println("extractDynamicValuesFromSmsTemplate" );
+        System.out.println("extractDynamicValuesFromSmsTemplate" );
 
         String smsTemplate = content.getSmsTemplate();
         PatternPlaceHolders placeHolders = new PatternPlaceHolders();
         String newSmsTemplate = smsTemplate;
+
         /*
         [a-zA-Z0-9-,. ] -> words having small or capital letters or numbers and which includes - or , or . and space
         (?!day\(s\)) -> this is to say exclude day(s)
@@ -378,7 +472,7 @@ public class ExcelParser {
          [a-zA-Z_ ]+ ->  can have 1 or more occurrence of letters, underscore
          */
         String regexWordsNum = "[a-zA-Z0-9-,. ]";
-        String regex = "(?!\\(s\\))[^a-zA-Z0-9_,.& ]+[a-zA-Z_ ]+[^a-zA-Z0-9_,.& ]+";
+      //  String regex = "(?!\\(s\\))[^a-zA-Z0-9_,.& ]+[a-zA-Z_ ]+[^a-zA-Z0-9_,.& ]+";
         StringBuilder eventStr = new StringBuilder();
         int i = 0;
 
@@ -388,13 +482,13 @@ public class ExcelParser {
         Matcher matcher = patternWords.matcher(smsTemplate);
         Matcher matcherSpecial = patternSpecialCharacters.matcher(smsTemplate);
         if (!matcher.find()) {
-            //System.out.println("No special characters found. Skipping pattern matching.");
+            System.out.println("No special characters found. Skipping pattern matching.");
             return placeHolders;
         } else {
             while (matcherSpecial.find()) {
-                //  //System.out.println(matcherSpecial.group(0));
+                //  System.out.println(matcherSpecial.group(0));
                 String matchingStr = matcherSpecial.group();
-                //System.out.println("found match :" + matchingStr );
+                System.out.println("found match :" + matchingStr );
 
                 String placeHolderVal = removeSpecialCharactersFromDynamicValues(matchingStr);
                 eventStr.append(placeHolderVal).append(":param").append(i++).append(",");
@@ -408,7 +502,7 @@ public class ExcelParser {
             placeHolders.setEventId(content.getEvent());
             placeHolders.setOriginalString(content.getSmsTemplate());
 
-            //System.out.println("placeholder object :" + placeHolders );
+            System.out.println("placeholder object :" + placeHolders );
 
 
         }
@@ -417,7 +511,7 @@ public class ExcelParser {
     }
 
     private String removeSpecialCharactersFromDynamicValues(String str) {
-        //System.out.println("removeSpecialCharactersFromDynamicValues from :: " + str );
+        System.out.println("removeSpecialCharactersFromDynamicValues from :: " + str );
 
         //   String regexWords = "\\w+(_\\w+)+";//matches letters, numbers, underscores
         String regexWords = "[a-zA-Z0-9_]+";
@@ -427,14 +521,29 @@ public class ExcelParser {
 
         while (matcher.find()) {
             placeHolder = matcher.group();
-            //  //System.out.println(placeHolder);
+            //  System.out.println(placeHolder);
             if (!placeHolder.isEmpty())
                 return placeHolder;
         }
 
-        //System.out.println("removed special characters final value :: " + placeHolder );
+        System.out.println("removed special characters final value :: " + placeHolder );
 
         return placeHolder;
+    }
+
+    private static void initializeRegex() {
+       String[] exclusionStrings = {"TVN##$$", "OTP##", "TCN##$$", "day(s)", "Debit/Credit", "https://"};
+        //StringBuilder regexBuilder = new StringBuilder("(?!\\(s\\))[^a-zA-Z0-9_,.& ]+[a-zA-Z_ ]+[^a-zA-Z0-9_,.& ]+");
+        StringBuilder regexBuilder = new StringBuilder("\\b[^a-zA-Z0-9_,.& ]+[a-zA-Z0-9_ ]+[^a-zA-Z0-9_,.& ]+\\b");
+        String exclusionRegex = "";
+        for (String exclusion : exclusionStrings) {
+            exclusionRegex += "(?!.*\\b" + exclusion + "\\b)";
+
+        }
+
+        exclusionRegex += regexBuilder.toString();
+        regex = exclusionRegex;
+        System.out.println("Final Regex: " + regex);
     }
 
     private void shutdownExecutorService() {
