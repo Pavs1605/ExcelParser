@@ -17,4 +17,5 @@
 5. Column name is template, SUBJECT, PARAMETER_VALUE, PARAM_VALUE, SMS_Text in few data files.
 6. Exclusion of double quotes & single quotes for dynamic values, else the whole string would be considered as a token
    "Dear Customer, An amount of AED {Amount} has been withdrawn from your account {AccountNumber}, in {BranchName} {TermianlNumber} on Date {Date} Time {Time}."
-7. 
+7. Can we tell them, to not use delimiter as '/'?
+    Since say https://www.google.com/1/2 

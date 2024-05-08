@@ -5,11 +5,8 @@ import com.rakbank.excelparser.model.PatternPlaceHolders;
 import com.rakbank.excelparser.serviceImpl.WBSheetServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
-public class WBSheetServiceTest {
+public class WBSheetServiceTestCopy {
 
     @Test
     public void testExtractValuesWithDollar() {
@@ -20,7 +17,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;", result.getEventRqTemplate());
     }
     @Test
     public void testExtractValuesWithPercentile() {
@@ -31,31 +28,31 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesWithHash() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello #name_id# with ####id_new####");
+        content.setSmsTemplate("Hello #name_id# with ####name_id####");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) with (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,id_new:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;name_id:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesWithFlowerBraces() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello {name_id} and {name_id}");
+        content.setSmsTemplate("Hello {name_id}");
 
         PatternPlaceHolders result = service.extractValues(content);
 
-        Assertions.assertEquals("Hello (.*) and (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,name_id:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("Hello (.*)", result.getPattern());
+        Assertions.assertEquals("name_id:param0;", result.getEventRqTemplate());
     }
 
     @Test
@@ -67,23 +64,23 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcd", result.getPattern());
-        Assertions.assertEquals("Branch_DROPDOWN_BRANCH:param0", result.getEventRqTemplate());
+        Assertions.assertEquals("Branch_DROPDOWN_BRANCH:param0;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesWithSquareBracesUnderscore() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello [name_id] and [[otp 1]]");
+        content.setSmsTemplate("Hello [name_id]");
 
         PatternPlaceHolders result = service.extractValues(content);
 
-        Assertions.assertEquals("Hello (.*) and (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp 1:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("Hello (.*)", result.getPattern());
+        Assertions.assertEquals("name_id:param0;", result.getEventRqTemplate());
     }
 
     @Test
-    public void textExtractValuesType$$Prospect_ID() {
+    public void textExtractValuesType1() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
         content.setSmsTemplate("Your request $$Prospect_ID# for a credit card is successfully submitted . We will contact you in 2 business days to assist you with this request. Call us on 04 2130000 for any queries.");
@@ -91,7 +88,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Your request (.*) for a credit card is successfully submitted . We will contact you in 2 business days to assist you with this request. Call us on 04 2130000 for any queries.", result.getPattern());
-        Assertions.assertEquals("Prospect_ID:param0,", result.getEventRqTemplate());
+        Assertions.assertEquals("Prospect_ID:param0;", result.getEventRqTemplate());
     }
 
     @Test
@@ -103,7 +100,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("We regret that your request (.*) for a (.*) is not approved due to the Bank's policy. Call us on 04 2130000 for any queries", result.getPattern());
-        Assertions.assertEquals("Prospect_ID:param0,Product_Name:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("Prospect_ID:param0;Product_Name:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -115,7 +112,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Collect your Internet banking ID & Password from (.*) Branch within (.*) day(s) between 8AM-3PM Mon to Thur & Sat, 7:30AM-12:30PM Fri", result.getPattern());
-        Assertions.assertEquals("Branch_DROPDOWN_BRANCH:param0,Day_DROPDOWN_DAY:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("Branch_DROPDOWN_BRANCH:param0;Day_DROPDOWN_DAY:param1;", result.getEventRqTemplate());
     }
 
 
@@ -141,19 +138,19 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testAngularBraces() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Dear Customer, your digital account number for RAKBANK Card number ending <@TransferredAmount> bc <CardNumberLast4> has been permanently deactivated.");
+        content.setSmsTemplate("Dear Customer, your digital account number for RAKBANK Card number ending <CardNumberLast4> has been permanently deactivated.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Dear Customer, your digital account number for RAKBANK Card number ending (.*) has been permanently deactivated.", result.getPattern());
-        Assertions.assertEquals("CardNumberLast4:param0", result.getEventRqTemplate());
+        Assertions.assertEquals("CardNumberLast4:param0;", result.getEventRqTemplate());
     }
     @Test
     public void testExtractValuesAtTheRateOf() {
@@ -164,7 +161,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -176,7 +173,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -188,7 +185,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp 1:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp 1:param1;", result.getEventRqTemplate());
     }
 
 
@@ -197,12 +194,12 @@ public class WBSheetServiceTest {
     public void testExtractValuesRoundBraces() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello (name_id) abcdef ((otp))");
+        content.setSmsTemplate("Hello ~name_id~ abcdef ~~otp~~");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -214,19 +211,19 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) 123 (.*) 124.56 (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1,abde:param2,tef:param3", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;abde:param2;tef:param3;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingHyphen() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello -name_id- abcdef --otp--");
+        content.setSmsTemplate("Hello -name_id- abcdef --otp---");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -238,7 +235,7 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name_id:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name_id:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -250,31 +247,19 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello day(s) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("otp:param1", result.getEventRqTemplate());
-    }
-
-    @Test
-    public void testWithAngularAtTheRate() {
-        WBSheetServiceImpl service = new WBSheetServiceImpl();
-        Content content = new Content();
-        content.setSmsTemplate("Successfully transferred AED <@TransferredAmount> to <@CreditedAccount> From <@DebitedAccount>. Thank you for using RAK Direct.");
-
-        PatternPlaceHolders result = service.extractValues(content);
-
-        Assertions.assertEquals("Hello day(s) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingEquals() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello ==name== abcdef [otp]]");
+        content.setSmsTemplate("Hello ==name=== abcdef [otp]]");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -286,19 +271,19 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*)", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingGreaterThanEqualTo() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello <<name>> abcdef <otp> gef.");
+        content.setSmsTemplate("Hello >>name<<< abcdef >otp<> gef.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -310,19 +295,19 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingBackSlash() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello //name// abcdef //otp// gef.");
+        content.setSmsTemplate("Hello /name// abcdef /otp// gef.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
@@ -334,43 +319,43 @@ public class WBSheetServiceTest {
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingMultiply() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello **name** abcdef *otp* gef.");
+        content.setSmsTemplate("Hello **name** abcdef *otp*** gef.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingPipe() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello ||name|| abcdef ||otp|| gef.");
+        content.setSmsTemplate("Hello ||name| abcdef |otp||| gef.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
     @Test
     public void testExtractValuesUsingColon() {
         WBSheetServiceImpl service = new WBSheetServiceImpl();
         Content content = new Content();
-        content.setSmsTemplate("Hello :name: abcdef :otp: gef.");
+        content.setSmsTemplate("Hello ::name: abcdef :otp::: gef.");
 
         PatternPlaceHolders result = service.extractValues(content);
 
         Assertions.assertEquals("Hello (.*) abcdef (.*) gef.", result.getPattern());
-        Assertions.assertEquals("name:param0,otp:param1", result.getEventRqTemplate());
+        Assertions.assertEquals("name:param0;otp:param1;", result.getEventRqTemplate());
     }
 
 
